@@ -43,6 +43,8 @@ public class TFTPTest extends TestCase {
 
     static int testsLeftToRun = 9; // TODO Nasty hack.
 
+    private static TFTPClient tftpC;
+
     // only want to do this once...
     static {
         try {
@@ -51,13 +53,17 @@ public class TFTPTest extends TestCase {
             FILES[2] = createFile(new File(SERVER_DIR, FILE_PREFIX + "511.txt"), 511);
             FILES[3] = createFile(new File(SERVER_DIR, FILE_PREFIX + "512.txt"), 512);
             FILES[4] = createFile(new File(SERVER_DIR, FILE_PREFIX + "513.txt"), 513);
-            FILES[5] = createFile(new File(SERVER_DIR, FILE_PREFIX + "med.txt"), 1000 * 1024);
-            FILES[6] = createFile(new File(SERVER_DIR, FILE_PREFIX + "big.txt"), 5000 * 1024);
-            FILES[7] = createFile(new File(SERVER_DIR, FILE_PREFIX + "huge.txt"), 37000 * 1024);
+            FILES[5] = createFile(new File(SERVER_DIR, FILE_PREFIX + "med.txt"), 1000 * 1024); // 1000
+            FILES[6] = createFile(new File(SERVER_DIR, FILE_PREFIX + "big.txt"), 5000 * 1024); // 5000
+            FILES[7] = createFile(new File(SERVER_DIR, FILE_PREFIX + "huge.txt"), 37000 * 1024); // 37000
 
             // Start the server
             tftpS = new TFTPServer(SERVER_DIR, SERVER_DIR, SERVER_PORT, ServerMode.GET_AND_PUT, null, null);
             tftpS.setSocketTimeout(2000);
+
+            tftpC = new TFTPClient();
+            tftpC.open();
+            tftpC.setSoTimeout(2000);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -124,9 +130,9 @@ public class TFTPTest extends TestCase {
 
     private void testDownload(final int mode, final File file) throws IOException {
         // Create our TFTP instance to handle the file transfer.
-        try (TFTPClient tftp = new TFTPClient()) {
-            tftp.open();
-            tftp.setSoTimeout(2000);
+        // try (TFTPClient tftp = new TFTPClient()) {
+        //     tftp.open();
+        //     tftp.setSoTimeout(2000);
 
             final File out = new File(SERVER_DIR, FILE_PREFIX + "download");
 
@@ -135,7 +141,7 @@ public class TFTPTest extends TestCase {
             assertFalse("Couldn't clear output location", out.exists());
 
             try (FileOutputStream output = new FileOutputStream(out)) {
-                tftp.receiveFile(file.getName(), mode, output, "localhost", SERVER_PORT);
+                tftpC.receiveFile(file.getName(), mode, output, "localhost", SERVER_PORT);
             }
 
             assertTrue("file not created", out.exists());
@@ -143,7 +149,7 @@ public class TFTPTest extends TestCase {
 
             // delete the downloaded file
             out.delete();
-        }
+        // }
     }
 
     public void testGetModeName() {
@@ -187,9 +193,9 @@ public class TFTPTest extends TestCase {
 
     private void testUpload(final int mode, final File file) throws Exception {
         // Create our TFTP instance to handle the file transfer.
-        try (TFTPClient tftp = new TFTPClient()) {
-            tftp.open();
-            tftp.setSoTimeout(2000);
+        // try (TFTPClient tftp = new TFTPClient()) {
+        //     tftp.open();
+        //     tftp.setSoTimeout(2000);
 
             final File in = new File(SERVER_DIR, FILE_PREFIX + "upload");
             // cleanup old failed runs
@@ -197,7 +203,7 @@ public class TFTPTest extends TestCase {
             assertFalse("Couldn't clear output location", in.exists());
 
             try (FileInputStream fis = new FileInputStream(file)) {
-                tftp.sendFile(in.getName(), mode, fis, "localhost", SERVER_PORT);
+                tftpC.sendFile(in.getName(), mode, fis, "localhost", SERVER_PORT);
             }
 
             // need to give the server a bit of time to receive our last packet, and
@@ -207,6 +213,6 @@ public class TFTPTest extends TestCase {
             assertTrue("FILES not identical on file " + file, contentEquals(file, in));
 
             in.delete();
-        }
+        // }
     }
 }
